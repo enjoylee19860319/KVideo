@@ -10,14 +10,16 @@ import { IPTVSourceManager } from '@/components/iptv/IPTVSourceManager';
 import { IPTVChannelGrid } from '@/components/iptv/IPTVChannelGrid';
 import { IPTVPlayer } from '@/components/iptv/IPTVPlayer';
 import { Icons } from '@/components/ui/Icon';
-import { AdminGate } from '@/components/AdminGate';
+import { hasPermission } from '@/lib/store/auth-store';
 import Link from 'next/link';
 import type { M3UChannel } from '@/lib/utils/m3u-parser';
 
 export default function IPTVPage() {
-  const { sources, cachedChannels, cachedGroups, refreshSources, isLoading, lastRefreshed } = useIPTVStore();
+  const { sources, cachedChannels, cachedGroups, cachedChannelsBySource, refreshSources, isLoading, lastRefreshed } = useIPTVStore();
   const [activeChannel, setActiveChannel] = useState<M3UChannel | null>(null);
   const [showManager, setShowManager] = useState(false);
+
+  const canManageSources = hasPermission('source_management');
 
   // Auto-refresh on first load if we have sources but no cached channels
   useEffect(() => {
@@ -27,7 +29,6 @@ export default function IPTVPage() {
   }, [sources.length, cachedChannels.length, isLoading, refreshSources]);
 
   return (
-    <AdminGate>
       <div className="min-h-screen bg-[var(--bg-color)] bg-[image:var(--bg-image)] bg-fixed">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           {/* Header */}
@@ -54,13 +55,15 @@ export default function IPTVPage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowManager(!showManager)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-2xl)] text-sm text-[var(--text-color)] hover:border-[var(--accent-color)]/30 transition-all cursor-pointer"
-              >
-                <Icons.Settings size={16} />
-                管理源
-              </button>
+              {canManageSources && (
+                <button
+                  onClick={() => setShowManager(!showManager)}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-2xl)] text-sm text-[var(--text-color)] hover:border-[var(--accent-color)]/30 transition-all cursor-pointer"
+                >
+                  <Icons.Settings size={16} />
+                  管理源
+                </button>
+              )}
             </div>
           </div>
 
@@ -87,6 +90,8 @@ export default function IPTVPage() {
                 groups={cachedGroups}
                 onSelect={setActiveChannel}
                 activeChannel={activeChannel}
+                channelsBySource={cachedChannelsBySource}
+                sources={sources}
               />
             </div>
           )}
@@ -102,6 +107,5 @@ export default function IPTVPage() {
           />
         )}
       </div>
-    </AdminGate>
   );
 }
